@@ -1,0 +1,39 @@
+1. 12286161685058214368 | IDS Attack Simulator Dashboard | PRIVATE | 2026-03-25T13:27:34.410419Z
+2. 16363606715518176275 | ThreatShield Dashboard Overview | PRIVATE | 2026-03-25T07:38:39.844541Z
+3. 4796017026008230969 | Create Booking | PRIVATE | 2026-03-25T06:54:54.389925Z
+4. 15746255739287312180 | Upload Records | PRIVATE | 2026-03-19T16:01:20.814286Z
+5. 4670386324099869598 | Product Requirements Document (PRD) | PRIVATE | 2026-03-16T12:58:16.819858Z
+6. 4076624648655593363 | SENTINEL SOC Dashboard | PRIVATE | 2026-03-14T16:19:54.508999Z
+7. 3133058535629322017 | Enhanced Second Brain Dashboard V2 | PRIVATE | 2026-02-22T08:29:49.121521Z
+8. 19767563610028659 | Operational Control Dashboard | PRIVATE | 2026-02-07T10:45:20.718045Z
+9. 4937641464564758022 | Freelance Tracker Dashboard Overview | PRIVATE | 2026-02-07T10:38:42.742096Z
+10. 14147353343938414991 | Disaster Response Dashboard | PRIVATE | 2026-02-05T16:22:03.984665Z
+11. 17067940159015719873 | Simulation Control Panel | PRIVATE | 2026-02-05T14:53:51.040027Z
+12. 526364684538296424 | MCP Client Universal Interface Dashboard | PRIVATE | 2026-01-31T16:30:35.262701Z
+13. 7943705846415730622 | Tools Registry & Schema Viewer | PRIVATE | 2026-01-31T05:19:30.332989Z
+14. 9353186731453831406 | System Login | PRIVATE | 2026-01-16T15:15:26.316473Z
+15. 4963522866959673903 | User Dashboard | PRIVATE | 2026-01-14T06:43:54.872945Z
+16. 18209728633307780902 | AI Forecasting & Risk Detection | PRIVATE | 2026-01-13T15:36:47.946024Z
+17. 10038588308228241844 | Enterprise Product Detail Page | PRIVATE | 2026-01-12T16:12:36.385458Z
+18. 9366805817250970263 | AI Price Negotiation Modal | PRIVATE | 2026-01-11T10:51:02.168008Z
+19. 12507721143677050591 | Product Detail Page with Negotiation Option | PRIVATE | 2026-01-11T10:50:24.076870Z
+20. 17269555164936461069 | Home Screen | PRIVATE | 2025-12-05T18:34:13.736540Z
+21. 6519289526381529771 | EcoMitra Landing Page | PRIVATE | 2025-12-05T18:34:06.379036Z
+22. 12433480645765383126 | <untitled> | PRIVATE | 2025-12-05T18:33:58.751564Z
+23. 3405920074684469270 | User Login | PRIVATE | 2025-10-13T07:04:31.393323Z
+24. 13118254437661769505 | User Login | PRIVATE | 2025-10-13T06:09:42.800770Z
+25. 1710975086445819269 | User Login | PRIVATE | 2025-10-13T06:09:28.030476Z
+26. 15074523149660872086 | Dashboard | PRIVATE | 2025-08-20T06:24:35.068937Z
+27. 15547992017907898512 | improve this UI | PRIVATE | 2025-08-17T08:33:05.258530Z
+28. 10598435819625681710 | Scan Detail Page | PRIVATE | 2025-08-15T06:50:38.990201Z
+29. 18368145979320636952 | Hackathon Landing Page | PRIVATE | 2025-08-15T03:53:09.876536Z
+30. 5373579031022399891 | create a landing page for hackethon website and use the image as reference to build it | PRIVATE | 2025-08-15T03:49:16.631535Z
+31. 5993532002238107605 | Hackathon Landing Page | PRIVATE | 2025-08-14T14:03:33.149994Z
+32. 11534868458804914742 | design this page and make it more inovative and attractive | PRIVATE | 2025-08-13T16:51:50.615854Z
+33. 2938964033470364595 | make this login page more interactive and attractive good color combination | PRIVATE | 2025-08-13T16:24:07.886948Z
+34. 4426103481409679797 | improve this login page {% load static %} <!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Login - AttendSys</title> <!-- Bootstrap for layout --> <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"> <!-- Font Awesome for icons --> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"> <!-- Link to your main stylesheet --> <link rel="stylesheet" href="{% static 'css/style.css' %}"> </head> <body class="login-body"> <div class="login-container"> <!-- Illustration Column --> <div class="login-illustration-column d-none d-lg-flex"> <!-- You can uncomment the image you prefer --> <img src="{% static 'images/your-logo.png' %}" alt="Illustration"> <!-- <img src="{% static 'images/login_illustration.svg' %}" alt="Illustration">--> </div> <!-- Form Column --> <div class="login-form-column"> <div class="login-form-wrapper"> <div class="login-header"> <h3>Welcome Back</h3> <p>Login to access your dashboard</p> </div> {% if form.errors %} <div class="alert alert-danger p-2 text-center small"> Invalid email or password. Please try again. </div> {% endif %} <form method="post" id="loginForm"> {% csrf_token %} <div class="form-group mb-3"> <label for="{{ form.username.id_for_label }}" class="form-label">Email Address</label> <div class="input-group"> <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span> <!-- CORRECTED CODE: We create the <input> tag manually. This gives us full control and avoids the TemplateSyntaxError. Django's form object will still correctly handle validation. --> <input type="email" name="username" class="form-control" id="{{ form.username.id_for_label }}" required placeholder="Enter your email"> </div> </div> <div class="form-group"> <label for="{{ form.password.id_for_label }}" class="form-label">Password</label> <div class="input-group"> <span class="input-group-text"><i class="fa-solid fa-lock"></i></span> <input type="password" name="password" class="form-control" id="{{ form.password.id_for_label }}" required placeholder="Enter your password"> </div> </div> <div class="d-flex justify-content-between align-items-center my-4"> <div class="form-check"> <input class="form-check-input" type="checkbox" name="remember" id="rememberMe"> <label class="form-check-label" for="rememberMe"> Remember me </label> </div> <a href="{% url 'password_reset' %}" class="forgot-password-link">Forgot Password?</a> </div> <div class="d-grid"> <button type="submit" class="btn btn-login">Login</button> </div> </form> </div> </div> </div> </body> </html> and don't change any connections just improve it even more | PRIVATE | 2025-08-13T16:15:51.257554Z
+35. 13130253541372976813 | <untitled> | PRIVATE | 2025-08-13T16:03:45.128247Z
+36. 8729159749725113495 | Login | PRIVATE | 2025-08-08T17:08:55.674760Z
+37. 9951054350396310896 | LuminaCore is an AI-powered web search and summarization engine with additional features for analyzing YouTube videos and finding sources for given summaries. | PRIVATE | 2025-08-03T14:07:02.515850Z
+38. 7722545976263003059 | A simple to-do list application to help users manage their daily tasks. | PRIVATE | 2025-08-03T05:08:11.458555Z
+39. 6847219758562255071 | A simple to-do list application to help users manage their daily tasks. | PRIVATE | 2025-08-03T05:04:27.005078Z

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThreatShield | Cinematic SOC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/ui/styles.css" />
+</head>
+<body>
+  <div class="bg-layer"></div>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1>ThreatShield</h1>
+      <nav class="topnav">
+        <a href="#">Sectors</a>
+        <a class="active" href="#">Operations</a>
+        <a href="#">Intelligence</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <span class="chip">LIVE</span>
+      <span class="chip subtle">SOC MODE</span>
+    </div>
+  </header>
+
+  <aside class="sidenav">
+    <div class="agent-card">
+      <div class="agent-badge">OPERATOR_01</div>
+      <div class="agent-sub">CLEARANCE: OMEGA</div>
+      <button id="btnRefreshStatus" class="btn btn-primary wide">SYNC STATUS</button>
+    </div>
+    <ul>
+      <li class="active">Threats</li>
+      <li>Network</li>
+      <li>Logs</li>
+      <li>Signals</li>
+      <li>Terminal</li>
+    </ul>
+  </aside>
+
+  <main class="main">
+    <section class="headline glass">
+      <div>
+        <h2>Operational View</h2>
+        <p>Defense and adversarial attack simulation in one live command console.</p>
+      </div>
+      <div class="epoch">SYSTEM_EPOCH: <span id="epochStamp">-</span></div>
+    </section>
+
+    <section class="grid two">
+      <article class="glass panel">
+        <h3>Service Status</h3>
+        <div id="statusCards" class="cards"></div>
+      </article>
+
+      <article class="glass panel">
+        <h3>Sample Loader</h3>
+        <div class="actions">
+          <label>Sample Index
+            <input id="sampleIndex" type="number" min="0" placeholder="auto" />
+          </label>
+          <button id="btnLoadSample" class="btn">LOAD SAMPLE</button>
+        </div>
+        <p class="note">Pulls one normalized record from dataset simulation cache.</p>
+      </article>
+    </section>
+
+    <section class="glass panel spotlight">
+      <div class="spotlight-header">
+        <h3>Adversarial Simulation Lab</h3>
+        <button id="btnAttack" class="btn btn-danger">APPLY UAP ATTACK</button>
+      </div>
+      <div class="actions">
+        <button id="btnDefense" class="btn btn-primary">RUN DEFENSE PREDICTION</button>
+        <label>Epsilon
+          <input id="epsilon" type="number" min="0.001" max="0.1" step="0.001" value="0.02" />
+        </label>
+      </div>
+      <textarea id="featureInput" rows="8" placeholder="Paste 78 comma-separated normalized features"></textarea>
+      <p id="inputInfo" class="note"></p>
+    </section>
+
+    <section class="grid two">
+      <article class="glass panel">
+        <h3>Defense Result</h3>
+        <div id="defenseCards" class="cards"></div>
+      </article>
+
+      <article class="glass panel">
+        <h3>Attack Result</h3>
+        <div id="attackCards" class="cards"></div>
+      </article>
+    </section>
+
+    <section class="grid two">
+      <article class="glass panel">
+        <h3>Top Feature Perturbations</h3>
+        <div class="tableWrap">
+          <table id="changesTable"></table>
+        </div>
+      </article>
+
+      <article class="glass panel">
+        <div class="split-head">
+          <h3>Recent Alerts</h3>
+          <button id="btnLoadAlerts" class="btn">REFRESH</button>
+        </div>
+        <div class="tableWrap">
+          <table id="alertsTable"></table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="/ui/app.js"></script>
+</body>
+</html>

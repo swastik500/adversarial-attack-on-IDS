@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel Prism IDS Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="shield">S</div>
+      <div>
+        <strong>SENTINEL PRISM</strong>
+        <small>AI-IDS CONTROLLER</small>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboardView">Dashboard</button>
+      <button class="nav-item" data-view="attackView">Attack Control</button>
+      <button class="nav-item" data-view="resultsView">Results</button>
+      <button class="nav-item" data-view="logsView">Logs</button>
+    </nav>
+
+    <div class="operator">
+      <div class="avatar">A</div>
+      <div>
+        <strong>Admin_Root</strong>
+        <small>SYSTEM OVERLORD</small>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app">
+    <header class="topbar">
+      <h1 id="viewTitle">Adversarial IDS Attack Simulator</h1>
+      <div class="status-row">
+        <span class="dot"></span>
+        <span>Model Status: Active</span>
+      </div>
+    </header>
+
+    <section id="dashboardView" class="view active">
+      <div id="metricsCards" class="kpi-grid"></div>
+
+      <div class="row three">
+        <article class="panel attack-config">
+          <h2>Attack Configuration</h2>
+          <label>Attack Type
+            <select id="attackTypeSelect">
+              <option>FGSM (Fast Gradient Sign Method)</option>
+              <option>BIM (Basic Iterative Method)</option>
+            </select>
+          </label>
+          <label>Epsilon Value
+            <input id="epsilon" type="range" min="0.001" max="0.05" value="0.02" step="0.001" />
+          </label>
+          <div class="range-labels"><span>0.001</span><span id="epsilonLabel">0.020</span><span>0.050</span></div>
+          <label>Sample Index
+            <input id="sampleIndex" type="number" min="0" value="0" />
+          </label>
+          <label>Evaluation Size
+            <input id="evalSize" type="number" min="200" step="100" value="2000" />
+          </label>
+          <label class="toggle-row">
+            <span>Domain Constraints</span>
+            <input type="checkbox" checked disabled />
+          </label>
+          <button id="btnLoadSample" class="btn secondary">LOAD SAMPLE</button>
+          <button id="btnAttack" class="btn primary">RUN ATTACK</button>
+        </article>
+
+        <article class="panel">
+          <h2>Simulation Analysis</h2>
+          <div id="chartAcc" class="chart tall"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Live Network Topology</h2>
+          <div class="topology">
+            <span class="node n1"></span>
+            <span class="node n2"></span>
+            <span class="node hub"></span>
+            <span class="node n3"></span>
+            <span class="node n4"></span>
+            <span class="edge e1"></span>
+            <span class="edge e2"></span>
+            <span class="edge e3"></span>
+            <span class="edge e4"></span>
+          </div>
+          <div class="legend">
+            <span><i class="lg normal"></i>Normal</span>
+            <span><i class="lg attack"></i>Malicious</span>
+            <span><i class="lg fooled"></i>Fooled</span>
+          </div>
+        </article>
+      </div>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Adversarial Feature Perturbation Log</h2>
+          <span class="batch">BATCH: 104-A</span>
+        </div>
+        <div class="table-wrap"><table id="featureTable"></table></div>
+      </article>
+    </section>
+
+    <section id="attackView" class="view">
+      <div class="row two">
+        <article class="panel">
+          <h2>Dataset & Operations</h2>
+          <div id="datasetCards" class="cards"></div>
+          <div class="table-wrap"><table id="datasetTable"></table></div>
+        </article>
+        <article class="panel">
+          <h2>Temporal Ingress Analysis</h2>
+          <div id="chartFnr" class="chart"></div>
+          <h3>Live Packet Stream</h3>
+          <div class="table-wrap"><table id="sampleTable"></table></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="resultsView" class="view">
+      <article class="panel critical">
+        <div class="panel-head">
+          <h2>Post-Attack Evaluation</h2>
+          <span class="critical-badge">CRITICAL FAILURE</span>
+        </div>
+        <div id="comparisonCards" class="cards"></div>
+      </article>
+
+      <div class="row two">
+        <article class="panel">
+          <h2>Baseline Confusion Matrix</h2>
+          <div id="cmBefore" class="chart"></div>
+        </article>
+        <article class="panel critical-soft">
+          <h2>Post-Adversarial Confusion Matrix</h2>
+          <div id="cmAfter" class="chart"></div>
+        </article>
+      </div>
+
+      <div class="row two">
+        <article class="panel">
+          <h2>Feature Impact</h2>
+          <div id="featureImpact" class="chart"></div>
+        </article>
+        <article class="panel">
+          <h2>AI Recommendations</h2>
+          <ul class="recommendations">
+            <li>Retrain model with adversarial training using recent perturbation sets.</li>
+            <li>Enable robust input denoising for high-risk feature windows.</li>
+            <li>Deploy ensemble verification before final attack/benign decision.</li>
+          </ul>
+          <button class="btn secondary full">INITIATE DEFENSE PATCHING</button>
+        </article>
+      </div>
+    </section>
+
+    <section id="logsView" class="view">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Telemetry & Attack Logs</h2>
+        </div>
+        <div id="chartFool" class="chart"></div>
+      </article>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

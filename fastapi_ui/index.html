@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThreatShield Interactive IDS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>ThreatShield</h1>
+    <div class="status">Interactive Defense + Attack System</div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>Defense Panel (IDS)</h2>
+      <div class="actions">
+        <button id="btnLoadAttack">Load Attack Sample</button>
+        <button id="btnLoadBenign">Load Benign Sample</button>
+        <button id="btnPredict" class="primary">Run /predict</button>
+      </div>
+      <textarea id="sampleInput" rows="7" placeholder="78 comma-separated feature values"></textarea>
+      <div id="defenseCards" class="cards"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Attack Panel (Adversarial Engine)</h2>
+      <div class="actions">
+        <label>Epsilon <input id="epsilon" type="range" min="0.001" max="0.08" step="0.001" value="0.02" /></label>
+        <div id="epsVal">0.020</div>
+      </div>
+      <div class="actions">
+        <button id="btnGenerate" class="danger">Generate Attack</button>
+        <button id="btnApply" class="primary">Apply Attack</button>
+      </div>
+      <div id="attackCards" class="cards"></div>
+    </section>
+
+    <section class="panel full">
+      <h2>Before vs After</h2>
+      <div class="tableWrap"><table id="changesTable"></table></div>
+    </section>
+
+    <section class="panel full">
+      <h2>System Metrics</h2>
+      <div id="metricCards" class="cards"></div>
+      <div class="charts">
+        <div id="accChart" class="chart"></div>
+        <div id="fnrChart" class="chart"></div>
+        <div id="foolChart" class="chart"></div>
+      </div>
+      <div class="actions"><button id="btnRefreshMetrics">Refresh Metrics</button></div>
+    </section>
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
