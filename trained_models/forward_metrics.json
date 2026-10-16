@@ -1,7 +1,7 @@
 {
-  "accuracy_before": 0.9419375114579787,
-  "accuracy_after": 0.9897336511012754,
-  "fnr_before": 0.020460358056265986,
-  "fnr_after": 1.0,
-  "fooling_rate": 0.06790980279181835
+  "accuracy_before": 0.8678731372600372,
+  "accuracy_after": 0.9805934578215436,
+  "fnr_before": 0.017902813299232736,
+  "fnr_after": 0.9846547314578005,
+  "fooling_rate": 0.136448157557028
 }

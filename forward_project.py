@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import List, Tuple
 
 import gymnasium as gym
@@ -43,12 +44,15 @@ def load_preprocessed_data(x_path: str, y_path: str, test_ratio: float, seed: in
 class IDSEnv(gym.Env):
     metadata = {"render_modes": []}
 
-    def __init__(self, x: np.ndarray, y: np.ndarray):
+    def __init__(self, x: np.ndarray, y: np.ndarray, adv_ratio: float = 0.0, model_adapter = None, epsilon: float = 0.03):
         super().__init__()
         self.x = x
         self.y = y
         self.n_samples, self.n_features = self.x.shape
         self.index = 0
+        self.adv_ratio = adv_ratio
+        self.model_adapter = model_adapter
+        self.epsilon = epsilon
 
         self.observation_space = spaces.Box(
             low=0.0,
@@ -61,7 +65,10 @@ class IDSEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.index = 0
-        return self.x[self.index], {}
+        obs = self.x[self.index]
+        if self.adv_ratio > 0.0 and self.model_adapter is not None and np.random.rand() < self.adv_ratio:
+            obs = self._apply_adversarial(obs)
+        return obs, {}
 
     def step(self, action):
         correct_label = int(self.y[self.index])
@@ -75,8 +82,27 @@ class IDSEnv(gym.Env):
             next_obs = np.zeros((self.n_features,), dtype=np.float32)
         else:
             next_obs = self.x[self.index]
+            if self.adv_ratio > 0.0 and self.model_adapter is not None and np.random.rand() < self.adv_ratio:
+                next_obs = self._apply_adversarial(next_obs)
 
         return next_obs, reward, terminated, truncated, {}
+
+    def _apply_adversarial(self, obs: np.ndarray) -> np.ndarray:
+        try:
+            device = self.model_adapter.device
+            x_t = torch.tensor(obs, dtype=torch.float32, device=device).requires_grad_(True)
+            q_vals = self.model_adapter.q_values(x_t.unsqueeze(0))
+            pred = torch.argmax(q_vals, dim=1)
+            loss = F.cross_entropy(q_vals, pred)
+            loss.backward()
+            if x_t.grad is not None:
+                grad = x_t.grad.detach()
+                x_adv = x_t + self.epsilon * grad.sign()
+                return torch.clamp(x_adv, 0.0, 1.0).detach().cpu().numpy()
+        except Exception:
+            pass
+        return obs
+
 
 
 @dataclass
@@ -122,8 +148,8 @@ class DQNTorchAdapter:
         return self.model.policy.q_net(x_tensor)
 
 
-def train_dqn_ids(x_train: np.ndarray, y_train: np.ndarray, total_timesteps: int, seed: int) -> DQN:
-    env = IDSEnv(x_train, y_train)
+def train_dqn_ids(x_train: np.ndarray, y_train: np.ndarray, total_timesteps: int, seed: int, adv_ratio: float = 0.0, epsilon: float = 0.03) -> DQN:
+    env = IDSEnv(x_train, y_train, adv_ratio=adv_ratio, epsilon=epsilon)
     model = DQN(
         "MlpPolicy",
         env,
@@ -137,8 +163,13 @@ def train_dqn_ids(x_train: np.ndarray, y_train: np.ndarray, total_timesteps: int
         target_update_interval=500,
         verbose=1,
     )
+    if adv_ratio > 0.0:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        adapter = DQNTorchAdapter(dqn_model=model, device=device)
+        env.model_adapter = adapter
     model.learn(total_timesteps=total_timesteps)
     return model
+
 
 
 def make_balanced_training_subset(x_train: np.ndarray, y_train: np.ndarray, seed: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -374,6 +405,13 @@ def main():
     parser.add_argument("--mf", default="")
     parser.add_argument("--rf", default="")
     parser.add_argument("--uf", default="")
+    parser.add_argument("--runs-dir", default="trained_models/forward_runs")
+    parser.add_argument("--adv-ratio", type=float, default=0.0, help="Adversarial training ratio [0.0 - 1.0]")
+    parser.add_argument(
+        "--no-save-run-metrics",
+        action="store_true",
+        help="Disable saving timestamped per-run metrics used for statistical significance summaries.",
+    )
 
     args = parser.parse_args()
 
@@ -396,6 +434,8 @@ def main():
         y_train=y_train_bal,
         total_timesteps=args.timesteps,
         seed=args.seed,
+        adv_ratio=args.adv_ratio,
+        epsilon=args.epsilon,
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -439,11 +479,42 @@ def main():
     metrics = evaluate_attack(dqn_model, x_test, y_test, x_test_adv)
 
     os.makedirs("trained_models", exist_ok=True)
-    dqn_model.save("trained_models/dqn_ids_model")
+    if args.adv_ratio > 0.0:
+        dqn_model.save("trained_models/dqn_ids_model_adv")
+        print("Adversarially trained DQN model saved to trained_models/dqn_ids_model_adv.zip")
+    else:
+        dqn_model.save("trained_models/dqn_ids_model")
+        print("Clean DQN model saved to trained_models/dqn_ids_model.zip")
     np.save("trained_models/uap.npy", uap)
+
 
     with open("trained_models/forward_metrics.json", "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
+
+    run_record = {
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "seed": int(args.seed),
+        "attack": str(args.attack),
+        "timesteps": int(args.timesteps),
+        "epsilon": float(args.epsilon),
+        "uap_epochs": int(args.uap_epochs),
+        "pcc_steps": int(args.pcc_steps),
+        "pcc_lr": float(args.pcc_lr),
+        "pcc_weight": float(args.pcc_weight),
+        "train_shape": [int(v) for v in x_train.shape],
+        "test_shape": [int(v) for v in x_test.shape],
+        "metrics": metrics,
+    }
+
+    if not args.no_save_run_metrics:
+        os.makedirs(args.runs_dir, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        run_file = os.path.join(
+            args.runs_dir,
+            f"metrics_{ts}_seed{args.seed}_{args.attack}_t{args.timesteps}.json",
+        )
+        with open(run_file, "w", encoding="utf-8") as f:
+            json.dump(run_record, f, indent=2)
 
     print("\n=== Final Metrics ===")
     print(f"Accuracy Before Attack: {metrics['accuracy_before'] * 100:.2f}%")
@@ -456,6 +527,8 @@ def main():
     print("- trained_models/dqn_ids_model.zip")
     print("- trained_models/uap.npy")
     print("- trained_models/forward_metrics.json")
+    if not args.no_save_run_metrics:
+        print(f"- {args.runs_dir}/*.json")
 
 
 if __name__ == "__main__":

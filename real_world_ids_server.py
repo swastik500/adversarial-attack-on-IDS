@@ -2,9 +2,10 @@ import argparse
 import importlib
 import json
 import os
+from collections import deque
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -44,7 +45,11 @@ def get_q_probs(model, features_2d: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
         pred = torch.argmax(probs, dim=1)
         conf = torch.max(probs, dim=1).values
 
-    return pred.cpu().numpy().astype(np.int64), conf.cpu().numpy().astype(np.float32)
+    pred_np = pred.cpu().numpy().astype(np.int64)
+    conf_np = conf.cpu().numpy().astype(np.float32)
+    # Ensure JSON-safe confidence values
+    conf_np = np.nan_to_num(conf_np, nan=0.0, posinf=1.0, neginf=0.0)
+    return pred_np, conf_np
 
 
 def coerce_features(payload: Dict, n_features: int) -> np.ndarray:
@@ -100,11 +105,14 @@ def coerce_csv_dataframe(df: pd.DataFrame, n_features: int) -> np.ndarray:
 
     if all(col in df.columns for col in expected_cols):
         values = df[expected_cols].to_numpy(dtype=np.float32)
+        values = np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=0.0)
         return values
 
     numeric_df = df.select_dtypes(include=[np.number])
     if numeric_df.shape[1] == n_features:
-        return numeric_df.to_numpy(dtype=np.float32)
+        values = numeric_df.to_numpy(dtype=np.float32)
+        values = np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=0.0)
+        return values
 
     raise ValueError(
         f"CSV must include either columns f0..f{n_features - 1} or exactly {n_features} numeric columns."
@@ -116,7 +124,8 @@ def to_label_name(v: int) -> str:
 
 
 def clamp01(x: np.ndarray) -> np.ndarray:
-    return np.clip(x, 0.0, 1.0)
+    clean = np.nan_to_num(x, nan=0.0, posinf=1.0, neginf=0.0)
+    return np.clip(clean, 0.0, 1.0)
 
 
 def load_optional_uap(uap_path: str, n_features: int) -> np.ndarray:
@@ -161,8 +170,97 @@ class IDSService:
         self.uap = load_optional_uap(uap_path, self.n_features)
         self.sim_x, self.sim_y = load_optional_sim_data(sim_x_path, sim_y_path)
 
-    def predict_one(self, features: np.ndarray) -> Dict:
+        self.live_window = deque(maxlen=5000)
+        self.ref_x: Optional[np.ndarray] = None if self.sim_x is None else self.sim_x.astype(np.float32)
+        if self.ref_x is not None and self.ref_x.ndim == 2 and self.ref_x.shape[0] > 0:
+            self.ref_mean = np.mean(self.ref_x, axis=0)
+            self.ref_std = np.std(self.ref_x, axis=0)
+        else:
+            self.ref_mean = np.zeros((self.n_features,), dtype=np.float32)
+            self.ref_std = np.ones((self.n_features,), dtype=np.float32)
+
+    def _update_live_window(self, x_batch: np.ndarray) -> None:
+        with self.lock:
+            for i in range(x_batch.shape[0]):
+                self.live_window.append(x_batch[i].astype(np.float32).copy())
+
+    def _compute_psi(self, ref_col: np.ndarray, live_col: np.ndarray, bins: int = 10) -> float:
+        if ref_col.size == 0 or live_col.size == 0:
+            return 0.0
+
+        q = np.linspace(0.0, 100.0, bins + 1)
+        edges = np.percentile(ref_col, q)
+        edges = np.unique(edges)
+        if edges.size < 3:
+            edges = np.linspace(0.0, 1.0, bins + 1)
+
+        ref_hist, _ = np.histogram(ref_col, bins=edges)
+        live_hist, _ = np.histogram(live_col, bins=edges)
+
+        ref_pct = ref_hist.astype(np.float64) / max(np.sum(ref_hist), 1)
+        live_pct = live_hist.astype(np.float64) / max(np.sum(live_hist), 1)
+
+        eps = 1e-8
+        return float(np.sum((live_pct - ref_pct) * np.log((live_pct + eps) / (ref_pct + eps))))
+
+    def drift_summary(self, top_k: int = 10) -> Dict:
+        if self.ref_x is None:
+            return {
+                "status": "unavailable",
+                "message": "Reference baseline is unavailable. Provide NBx.npy via --sim-x.",
+            }
+
+        if len(self.live_window) == 0:
+            return {
+                "status": "insufficient_live_data",
+                "message": "No live samples observed yet.",
+                "live_samples": 0,
+                "reference_samples": int(self.ref_x.shape[0]),
+            }
+
+        with self.lock:
+            live_x = np.asarray(list(self.live_window), dtype=np.float32)
+
+        live_mean = np.mean(live_x, axis=0)
+        live_std = np.std(live_x, axis=0)
+
+        z = np.abs(live_mean - self.ref_mean) / (self.ref_std + 1e-6)
+
+        psi_vals = np.zeros((self.n_features,), dtype=np.float64)
+        for i in range(self.n_features):
+            psi_vals[i] = self._compute_psi(self.ref_x[:, i], live_x[:, i], bins=10)
+
+        score = z + psi_vals
+        top = min(max(int(top_k), 1), self.n_features)
+        idx = np.argsort(-score)[:top]
+
+        rows = []
+        for i in idx:
+            rows.append(
+                {
+                    "feature": f"f{int(i)}",
+                    "reference_mean": float(self.ref_mean[int(i)]),
+                    "reference_std": float(self.ref_std[int(i)]),
+                    "live_mean": float(live_mean[int(i)]),
+                    "live_std": float(live_std[int(i)]),
+                    "mean_abs_z": float(z[int(i)]),
+                    "psi": float(psi_vals[int(i)]),
+                    "drift_score": float(score[int(i)]),
+                }
+            )
+
+        return {
+            "status": "ok",
+            "reference_samples": int(self.ref_x.shape[0]),
+            "live_samples": int(live_x.shape[0]),
+            "top_k": int(top),
+            "top_drift_features": rows,
+        }
+
+    def predict_one(self, features: np.ndarray, record_drift: bool = True) -> Dict:
         x = clamp01(features.astype(np.float32)).reshape(1, -1)
+        if record_drift:
+            self._update_live_window(x)
         with self.lock:
             pred, conf = get_q_probs(self.model, x)
 
@@ -195,10 +293,16 @@ class IDSService:
 
         return item
 
-    def predict_batch(self, features_2d: np.ndarray) -> Dict:
+    def predict_batch(self, features_2d: np.ndarray, record_drift: bool = True) -> Dict:
         x = clamp01(features_2d.astype(np.float32))
+        if record_drift:
+            self._update_live_window(x)
         with self.lock:
             pred, conf = get_q_probs(self.model, x)
+
+        # Ensure JSON-safe values
+        pred = np.nan_to_num(pred, nan=0, posinf=0, neginf=0).astype(np.int64)
+        conf = np.nan_to_num(conf, nan=0.0, posinf=1.0, neginf=0.0).astype(np.float32)
 
         records = []
         attack_count = 0
@@ -215,10 +319,12 @@ class IDSService:
                 attack_count += 1
             records.append(rec)
 
+        ratio = attack_count / max(1, x.shape[0])
+        ratio = float(np.nan_to_num(ratio, nan=0.0, posinf=1.0, neginf=0.0))
         return {
             "count": int(x.shape[0]),
             "attack_count": int(attack_count),
-            "attack_ratio": float(attack_count / max(1, x.shape[0])),
+            "attack_ratio": ratio,
             "records": records,
         }
 
@@ -260,8 +366,8 @@ class IDSService:
         clean = clamp01(features.astype(np.float32))
         adv = clamp01(clean + delta)
 
-        pre = self.predict_one(clean)
-        post = self.predict_one(adv)
+        pre = self.predict_one(clean, record_drift=False)
+        post = self.predict_one(adv, record_drift=False)
 
         diff = adv - clean
         top_k = min(15, self.n_features)
@@ -309,6 +415,7 @@ def create_app(service: IDSService) -> Flask:
                     "/predict_csv",
                     "/simulation_sample",
                     "/simulate_attack",
+                    "/drift",
                     "/alerts",
                 ],
             }
@@ -327,6 +434,7 @@ def create_app(service: IDSService) -> Flask:
                 "time": utc_now_iso(),
                 "n_features": service.n_features,
                 "alert_threshold": service.alert_threshold,
+                "live_samples": int(len(service.live_window)),
             }
         )
 
@@ -379,6 +487,15 @@ def create_app(service: IDSService) -> Flask:
             features = coerce_features(payload, service.n_features)
             epsilon = float(payload.get("epsilon", 0.02))
             result = service.simulate_attack(features, epsilon)
+            return jsonify(result)
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 400
+
+    @app.get("/drift")
+    def drift():
+        try:
+            top_k = int(request.args.get("top_k", 10))
+            result = service.drift_summary(top_k=top_k)
             return jsonify(result)
         except Exception as exc:
             return jsonify({"error": str(exc)}), 400

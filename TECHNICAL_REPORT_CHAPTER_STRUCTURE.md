@@ -1033,7 +1033,7 @@ The following enhancements are recommended for future development:
 
 ### Near-Term Improvements (1-2 months)
 
-1. **Multi-Seed Robustness Framework**: Enable automated runs across multiple random seeds, compute confidence intervals, and perform statistical significance testing.
+1. **Multi-Seed Robustness Framework**: Enable automated runs across multiple random seeds, compute confidence intervals, and perform statistical significance testing. 
 
 2. **Enhanced Attack Library**: Implement genetic algorithms and surrogate model attacks alongside gradient-based methods; provide standardized interface for attack comparison.
 

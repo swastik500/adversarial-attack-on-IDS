@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ThreatShield | Cinematic SOC</title>
+  <title>ThreatShield | Real-World IDS Service</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -16,41 +16,42 @@
     <div class="topbar-left">
       <h1>ThreatShield</h1>
       <nav class="topnav">
-        <a href="#">Sectors</a>
+        <a href="#">Real-World IDS</a>
         <a class="active" href="#">Operations</a>
-        <a href="#">Intelligence</a>
+        <a href="#">Monitor</a>
       </nav>
     </div>
     <div class="topbar-right">
-      <span class="chip">LIVE</span>
-      <span class="chip subtle">SOC MODE</span>
+      <span class="chip" id="liveChip">LIVE</span>
+      <span class="chip subtle">API SERVICE</span>
     </div>
   </header>
 
   <aside class="sidenav">
     <div class="agent-card">
-      <div class="agent-badge">OPERATOR_01</div>
-      <div class="agent-sub">CLEARANCE: OMEGA</div>
+      <div class="agent-badge">IDS_SYSTEM</div>
+      <div class="agent-sub">STATUS: ACTIVE</div>
       <button id="btnRefreshStatus" class="btn btn-primary wide">SYNC STATUS</button>
     </div>
     <ul>
-      <li class="active">Threats</li>
-      <li>Network</li>
-      <li>Logs</li>
-      <li>Signals</li>
-      <li>Terminal</li>
+      <li class="active">Defense</li>
+      <li>Attacks</li>
+      <li>Alerts</li>
+      <li>Drift</li>
+      <li>Batch</li>
     </ul>
   </aside>
 
   <main class="main">
     <section class="headline glass">
       <div>
-        <h2>Operational View</h2>
-        <p>Defense and adversarial attack simulation in one live command console.</p>
+        <h2>IDS Operations Console</h2>
+        <p>Real-time predictions, attack simulation, drift monitoring, and batch processing.</p>
       </div>
-      <div class="epoch">SYSTEM_EPOCH: <span id="epochStamp">-</span></div>
+      <div class="epoch">EPOCH: <span id="epochStamp">-</span></div>
     </section>
 
+    <!-- Service Status -->
     <section class="grid two">
       <article class="glass panel">
         <h3>Service Status</h3>
@@ -58,44 +59,46 @@
       </article>
 
       <article class="glass panel">
-        <h3>Sample Loader</h3>
-        <div class="actions">
-          <label>Sample Index
-            <input id="sampleIndex" type="number" min="0" placeholder="auto" />
-          </label>
-          <button id="btnLoadSample" class="btn">LOAD SAMPLE</button>
+        <h3>Quick Actions</h3>
+        <div class="actions vertical">
+          <button id="btnLoadSample" class="btn btn-primary">Load Sample</button>
+          <button id="btnLoadAlerts" class="btn">Refresh Alerts</button>
+          <button id="btnCheckDrift" class="btn">Check Drift</button>
         </div>
-        <p class="note">Pulls one normalized record from dataset simulation cache.</p>
       </article>
     </section>
 
+    <!-- Defense Panel -->
     <section class="glass panel spotlight">
       <div class="spotlight-header">
-        <h3>Adversarial Simulation Lab</h3>
+        <h3>Defense: Prediction & Threat Detection</h3>
+        <button id="btnDefense" class="btn btn-primary">RUN PREDICTION</button>
+      </div>
+      <div class="actions">
+        <label>Sample Index
+          <input id="sampleIndex" type="number" min="0" placeholder="auto-random" />
+        </label>
+      </div>
+      <textarea id="featureInput" rows="6" placeholder="Paste 78 comma-separated normalized features [0, 1]"></textarea>
+      <p id="inputInfo" class="note">Features: waiting for input...</p>
+      <div id="defenseCards" class="cards"></div>
+    </section>
+
+    <!-- Attack Simulation Panel -->
+    <section class="glass panel spotlight" style="margin-top: 16px;">
+      <div class="spotlight-header">
+        <h3>Attack: Adversarial Perturbation Simulation</h3>
         <button id="btnAttack" class="btn btn-danger">APPLY UAP ATTACK</button>
       </div>
       <div class="actions">
-        <button id="btnDefense" class="btn btn-primary">RUN DEFENSE PREDICTION</button>
-        <label>Epsilon
+        <label>Epsilon (perturbation budget)
           <input id="epsilon" type="number" min="0.001" max="0.1" step="0.001" value="0.02" />
         </label>
       </div>
-      <textarea id="featureInput" rows="8" placeholder="Paste 78 comma-separated normalized features"></textarea>
-      <p id="inputInfo" class="note"></p>
+      <div id="attackCards" class="cards"></div>
     </section>
 
-    <section class="grid two">
-      <article class="glass panel">
-        <h3>Defense Result</h3>
-        <div id="defenseCards" class="cards"></div>
-      </article>
-
-      <article class="glass panel">
-        <h3>Attack Result</h3>
-        <div id="attackCards" class="cards"></div>
-      </article>
-    </section>
-
+    <!-- Results Grid -->
     <section class="grid two">
       <article class="glass panel">
         <h3>Top Feature Perturbations</h3>
@@ -107,14 +110,49 @@
       <article class="glass panel">
         <div class="split-head">
           <h3>Recent Alerts</h3>
-          <button id="btnLoadAlerts" class="btn">REFRESH</button>
+          <span id="alertCount" class="note">Loading...</span>
         </div>
         <div class="tableWrap">
           <table id="alertsTable"></table>
         </div>
       </article>
     </section>
+
+    <!-- Batch Prediction Panel -->
+    <section class="glass panel">
+      <div class="split-head">
+        <h3>Batch Prediction: CSV Upload & Analysis</h3>
+        <button id="btnClearBatch" class="btn">Clear</button>
+      </div>
+      <div class="actions">
+        <label class="file-label" id="csvLabel">
+          Upload CSV (f0, f1, ..., f77 columns)
+          <input id="csvFile" type="file" accept=".csv" />
+        </label>
+        <div class="upload-status" id="csvStatus">No file selected</div>
+        <button id="btnProcessCSV" class="btn btn-primary">PROCESS CSV</button>
+      </div>
+      <div id="batchCards" class="cards"></div>
+      <div class="tableWrap">
+        <table id="batchResultsTable"></table>
+      </div>
+    </section>
+
+    <!-- Drift Monitoring Panel -->
+    <section class="glass panel">
+      <div class="split-head">
+        <h3>Live Drift Monitor: Feature Distribution Shifts</h3>
+        <button id="btnRefreshDrift" class="btn">Refresh</button>
+      </div>
+      <div id="driftSummary" class="cards"></div>
+      <div class="tableWrap">
+        <table id="driftTable"></table>
+      </div>
+    </section>
   </main>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <script src="/ui/app.js"></script>
 </body>

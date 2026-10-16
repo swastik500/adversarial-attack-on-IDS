@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThreatShield — Adversarial IDS & Security Testing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1418;
+      --bg-2: #131c21;
+      --panel: #18242a;
+      --line: #30434d;
+      --text: #e7f2f4;
+      --muted: #9ab1b9;
+      --primary: #13d1b7;
+      --primary-2: #58e6ca;
+      --warning: #ffb85c;
+      --danger: #ff7f7f;
+      --good: #53d39b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Manrope, Segoe UI, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .bg-gradient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(1200px 520px at 0% -10%, #1c3432 0%, transparent 60%),
+        radial-gradient(1000px 520px at 100% -30%, #1e2f3f 0%, transparent 56%),
+        var(--bg);
+      z-index: -1;
+    }
+
+    .animated-orb {
+      position: fixed;
+      z-index: -1;
+      opacity: 0.08;
+    }
+
+    .orb-1 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(19, 209, 183, 0.3), transparent 70%);
+      border-radius: 50%;
+      top: -10%;
+      right: 5%;
+      animation: floatOrb1 20s ease-in-out infinite;
+    }
+
+    .orb-2 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(88, 230, 202, 0.2), transparent 70%);
+      border-radius: 50%;
+      bottom: 5%;
+      left: -5%;
+      animation: floatOrb2 25s ease-in-out infinite;
+    }
+
+    @keyframes floatOrb1 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(40px, -60px); }
+    }
+
+    @keyframes floatOrb2 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-50px, 80px); }
+    }
+
+    /* Navigation */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(14, 21, 26, 0.95), rgba(14, 21, 26, 0.88));
+    }
+
+    nav {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+    }
+
+    .logo {
+      font-family: Space Grotesk, sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--primary-2);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: color 0.2s ease;
+      position: relative;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary-2);
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0%;
+      height: 2px;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-cta {
+      display: flex;
+      gap: 10px;
+    }
+
+    .nav-cta a {
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-cta a.primary {
+      background: var(--primary);
+      color: #04211f;
+      border-color: var(--primary);
+    }
+
+    .nav-cta a.primary:hover {
+      background: var(--primary-2);
+      transform: translateY(-2px);
+    }
+
+    /* Hero Section */
+    .hero {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 120px 20px 80px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-family: Space Grotesk, sans-serif;
+      font-size: clamp(2.4rem, 8vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      animation: slideUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .hero-highlight {
+      background: linear-gradient(135deg, var(--primary-2), var(--warning));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+      animation: slideUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s backwards;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: slideUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      color: #04211f;
+      border-color: var(--primary);
+    }
+
+    .btn.primary:hover {
+      background: var(--primary-2);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(19, 209, 183, 0.2);
+    }
+
+    .btn.secondary {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    .btn.secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary-2);
+      transform: translateY(-3px);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Features Grid */
+    .features {
+      max-width: 1200px;
+      margin: 80px auto 0;
+      padding: 0 20px;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .section-title h2 {
+      font-family: Space Grotesk, sans-serif;
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+    }
+
+    .section-title p {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 80px;
+    }
+
+    .feature-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 32px 24px;
+      background: linear-gradient(180deg, var(--panel), var(--bg));
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(19, 209, 183, 0.1), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(19, 209, 183, 0.1);
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .feature-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .feature-card p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Threat Model Section */
+    .threat-model {
+      max-width: 1200px;
+      margin: 100px auto;
+      padding: 60px 40px;
+      background: linear-gradient(135deg, rgba(19, 209, 183, 0.05), rgba(88, 230, 202, 0.05));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    .threat-model h2 {
+      font-family: Space Grotesk, sans-serif;
+      font-size: 1.8rem;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .threat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+    }
+
+    .threat-item {
+      padding: 24px;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    .threat-item:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .threat-item:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+
+    .threat-item:nth-child(4) {
+      animation-delay: 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .threat-item h4 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+      color: var(--primary-2);
+    }
+
+    .threat-item p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Services Section */
+    .services {
+      max-width: 1200px;
+      margin: 100px auto;
+      padding: 0 20px;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+    }
+
+    .service-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 40px 32px;
+      background: var(--panel);
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .service-box:hover {
+      border-color: var(--primary);
+      transform: translateY(-6px);
+    }
+
+    .service-icon {
+      font-size: 2.8rem;
+      margin-bottom: 16px;
+    }
+
+    .service-box h3 {
+      font-size: 1.3rem;
+      margin-bottom: 12px;
+    }
+
+    .service-box p {
+      color: var(--muted);
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .service-box .btn {
+      width: 100%;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 120px;
+      padding: 60px 20px 40px;
+      border-top: 1px solid var(--line);
+      background: var(--bg);
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-section h4 {
+      margin-bottom: 16px;
+      color: var(--primary-2);
+    }
+
+    .footer-section ul {
+      list-style: none;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 8px;
+    }
+
+    .footer-section ul li a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s ease;
+    }
+
+    .footer-section ul li a:hover {
+      color: var(--primary-2);
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links {
+        gap: 16px;
+        font-size: 0.85rem;
+      }
+
+      .hero {
+        padding: 80px 20px 60px;
+      }
+
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .threat-model {
+        padding: 40px 20px;
+      }
+
+      .services-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  <div class="animated-orb orb-1"></div>
+  <div class="animated-orb orb-2"></div>
+
+  <!-- Navigation -->
+  <header>
+    <nav>
+      <div class="logo">ThreatShield</div>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#threat-model">Threat Model</a></li>
+        <li><a href="#services">Services</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a href="/dashboard">FastAPI Dashboard</a>
+        <a href="http://127.0.0.1:8000/" target="_blank" class="primary">Real-World Service</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>
+      Adversarial IDS Testing &
+      <span class="hero-highlight">Security Validation</span>
+    </h1>
+    <p>
+      Test your intrusion detection system's robustness against adversarial perturbations.
+      Run interactive attack simulations, benchmark defense mechanisms, and monitor real-time data drift.
+    </p>
+    <div class="hero-cta">
+      <a href="/dashboard" class="btn primary">Launch FastAPI Dashboard</a>
+      <a href="#services" class="btn secondary">View Services</a>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <div class="section-title">
+      <h2>Key Capabilities</h2>
+      <p>Everything you need to stress-test and evaluate IDS robustness</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚔️</div>
+        <h3>Adversarial Attack Simulation</h3>
+        <p>Generate FGSM, BIM, PGD, and UAP-based perturbations under realistic feature constraints.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Real-Time Metrics</h3>
+        <p>Track Accuracy, False Negative Rate, and Fooling Rate across multiple attack types and epsilon values.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Live Drift Monitor</h3>
+        <p>Detect feature distribution shifts in live traffic using Z-score and Population Stability Index.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>Defense Mechanisms</h3>
+        <p>Evaluate feature-squeeze defense and other mitigation strategies against adaptive attacks.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Statistical Significance</h3>
+        <p>Run repeated experiments with mean/std/95% CI reporting for robust robustness assessment.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">⚙️</div>
+        <h3>Constrained Perturbations</h3>
+        <p>Enforce domain constraints: Modifiable, Recomputable, and Unmodifiable feature groups.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Threat Model -->
+  <section id="threat-model" class="threat-model">
+    <h2>Threat Model Scope</h2>
+    <div class="threat-grid">
+      <div class="threat-item">
+        <h4>Attacker Knowledge</h4>
+        <p>White/gray-box access to feature schema, normalization range, and approximate model behavior through API queries.</p>
+      </div>
+      <div class="threat-item">
+        <h4>Perturbation Budget</h4>
+        <p>L-infinity bounded by ε (e.g., 0.03). Features clamped to [0, 1] post-perturbation.</p>
+      </div>
+      <div class="threat-item">
+        <h4>Goal</h4>
+        <p>Evasion: misclassify attack traffic as benign while maintaining feature plausibility.</p>
+      </div>
+      <div class="threat-item">
+        <h4>Feature Constraints</h4>
+        <p>MF (modifiable), RF (recomputable from MF), UF (unmodifiable) enforce domain semantics.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services -->
+  <section id="services" class="services">
+    <div class="section-title">
+      <h2>Interactive Services</h2>
+      <p>Three deployment options for testing and validation</p>
+    </div>
+
+    <div class="services-grid">
+      <div class="service-box">
+        <div class="service-icon">🎮</div>
+        <h3>FastAPI Interactive UI</h3>
+        <p>
+          Full-featured dashboard with one-click demo, live activity tracking, animated timeline,
+          and toast notifications. Perfect for interactive exploration.
+        </p>
+        <a href="/dashboard" class="btn primary">Open Dashboard</a>
+      </div>
+
+      <div class="service-box">
+        <div class="service-icon">🌐</div>
+        <h3>Real-World IDS API</h3>
+        <p>
+          Production-ready Flask service for integration. Batch prediction, CSV upload, alert logging,
+          and live drift monitoring endpoints.
+        </p>
+        <a href="http://127.0.0.1:8000/" target="_blank" class="btn primary">Open Service</a>
+      </div>
+
+      <div class="service-box">
+        <div class="service-icon">📚</div>
+        <h3>Command-Line Pipeline</h3>
+        <p>
+          Programmatic control. Train DQN IDS, generate UAPs, run benchmarks,
+          and aggregate multi-run statistics with report_significance.py.
+        </p>
+        <a href="#readme" class="btn secondary">View Docs</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="/dashboard">FastAPI Dashboard</a></li>
+          <li><a href="http://127.0.0.1:8000/" target="_blank">Real-World Service</a></li>
+          <li><a href="README.md" target="_blank">Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>Pipelines</h4>
+        <ul>
+          <li><a href="#forward">Forward Project (DRL)</a></li>
+          <li><a href="#legacy">Gen-AAL Algorithm</a></li>
+          <li><a href="#significance">Statistical Reporting</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="https://www.unb.ca/cic/datasets/ids-2017.html" target="_blank">CICIDS 2017 Dataset</a></li>
+          <li><a href="#threat-model">Threat Model Details</a></li>
+          <li><a href="#features">Feature Overview</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>About</h4>
+        <ul>
+          <li><a href="#">Adversarial ML Research</a></li>
+          <li><a href="#">Security Testing</a></li>
+          <li><a href="#">Open Source</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 ThreatShield. Adversarial IDS Testing & Security Validation.</p>
+    </div>
+  </footer>
+</body>
+</html>

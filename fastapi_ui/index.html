@@ -6,58 +6,247 @@
   <title>ThreatShield Interactive IDS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/styles.css?v=3.2" />
 </head>
 <body>
   <header class="topbar">
     <h1>ThreatShield</h1>
-    <div class="status">Interactive Defense + Attack System</div>
+    <div class="statusRow">
+      <div class="status">Interactive Defense + Attack System</div>
+      <div class="pulseDot" title="Live UI updates enabled"></div>
+      <div id="backendStatus" class="statusChip">Backend: checking...</div>
+      <div class="statusChip" style="display:flex; align-items:center; gap:8px; border-color:var(--primary); background:#152b31; padding: 4px 10px;">
+        <span style="font-weight:700; color:var(--primary-2); font-size:0.75rem;">🛡️ DEFENSE SHIELD</span>
+        <label class="switch">
+          <input type="checkbox" id="globalDefenseToggleTopbar" checked>
+          <span class="slider round"></span>
+        </label>
+        <span id="globalDefenseStatusTextTopbar" style="font-weight:800; font-size:0.75rem; color:var(--primary-2);">ON</span>
+      </div>
+    </div>
   </header>
 
   <main class="layout">
+
+
     <section class="panel">
-      <h2>Defense Panel (IDS)</h2>
-      <div class="actions">
-        <button id="btnLoadAttack">Load Attack Sample</button>
-        <button id="btnLoadBenign">Load Benign Sample</button>
-        <button id="btnPredict" class="primary">Run /predict</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h2 style="margin:0;">1) Defense System Panel</h2>
+        <div style="display:flex; align-items:center; gap:8px; border:1px solid var(--primary); border-radius:10px; background:#152b31; padding:4px 10px;">
+          <span style="font-weight:700; color:var(--primary-2); font-size:0.75rem;">🛡️ DEFENSE SYSTEM</span>
+          <label class="switch">
+            <input type="checkbox" id="globalDefenseToggle" checked>
+            <span class="slider round"></span>
+          </label>
+          <span id="globalDefenseStatusText" style="font-weight:800; font-size:0.75rem; color:var(--primary-2);">ON</span>
+        </div>
       </div>
-      <textarea id="sampleInput" rows="7" placeholder="78 comma-separated feature values"></textarea>
-      <div id="defenseCards" class="cards"></div>
+      <p class="sub">Inspect real-time network traffic flows, identify attack profiles, and monitor security consensus.</p>
+      
+      <!-- Live Detection Metrics Cards -->
+      <div id="defenseCards" class="cards">
+        <div class="card"><div class="k">Attack Type</div><div id="defCardAttackType" class="v">-</div></div>
+        <div class="card"><div class="k">Confidence Score</div><div id="defCardConf" class="v">-</div></div>
+        <div class="card"><div class="k">Detection Status</div><div id="defCardStatus" class="v">-</div></div>
+        <div class="card"><div class="k">Timestamp</div><div id="defCardTimestamp" class="v">-</div></div>
+        <div class="card"><div class="k">Detection Mode</div><div id="defCardMode" class="v">-</div></div>
+        <div class="card" style="min-height: 80px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div class="k">Trained Model Used</div>
+          <div id="defCardModel" class="v" style="display:none;">-</div>
+          <select id="defActiveModelSelector" style="background:var(--bg-2); color:var(--text); border:1px solid var(--line); padding:4px 6px; border-radius:4px; font-size:0.8rem; width:100%; font-weight:700; margin-top:4px;">
+            <option value="auto">Auto (VAE Anomaly)</option>
+            <option value="dqn_clean">DQN (Clean)</option>
+            <option value="dqn_adv">DQN (Adv-Trained)</option>
+            <option value="mlp">MLP (Neural)</option>
+            <option value="cnn">CNN (1D Conv)</option>
+            <option value="rnn">RNN (LSTM)</option>
+            <option value="gbt">GBT (Ensemble)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Cross Model Evaluation -->
+      <div style="margin-top:20px;" id="crossModelSection">
+        <h3>📊 Cross-Model Classifier Evaluation</h3>
+        <p class="sub" style="margin-bottom:8px;">Live predictions and validation baseline metrics across all trained engines.</p>
+        <div class="tableWrap">
+          <table style="width:100%; text-align:left; border-collapse:collapse;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--line); color:var(--muted); font-size:0.8rem;">
+                <th style="padding:8px 6px;">Model Name</th>
+                <th style="padding:8px 6px;">Prediction</th>
+                <th style="padding:8px 6px;">Confidence</th>
+                <th style="padding:8px 6px;">Accuracy</th>
+                <th style="padding:8px 6px;">Precision</th>
+                <th style="padding:8px 6px;">Recall</th>
+                <th style="padding:8px 6px;">F1 Score</th>
+                <th style="padding:8px 6px;">Inference Time</th>
+              </tr>
+            </thead>
+            <tbody id="crossModelBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; border-top:1px dashed var(--line); padding-top:16px;" id="trainingLabSection">
+        <h3>🤖 Defensive Model Training Console</h3>
+        <p class="sub">Trigger neural retraining or DQN adversarial policy optimization directly from the dashboard.</p>
+        <div class="actions">
+          <label>Model to Train:
+            <select id="trainModelSelector" style="background:var(--bg-2); color:var(--text); border:1px solid var(--line); padding:6px; border-radius:4px;">
+              <option value="dqn_clean">DQN (Clean)</option>
+              <option value="dqn_adv">DQN (Adversarially Trained)</option>
+              <option value="mlp">MLP (Multi-Layer Perceptron)</option>
+              <option value="cnn">CNN (1D Convolutional)</option>
+              <option value="rnn">RNN (LSTM Recurrent)</option>
+              <option value="gbt">GBT (Gradient Boosted Trees)</option>
+            </select>
+          </label>
+          <label>Timesteps:
+            <input id="trainSteps" type="number" min="500" max="50000" step="500" value="2000" style="width:80px; background:var(--bg-2); border:1px solid var(--line);" />
+          </label>
+          <label>Adv Ratio:
+            <input id="trainAdvRatio" type="number" min="0.0" max="1.0" step="0.1" value="0.5" style="width:60px; background:var(--bg-2); border:1px solid var(--line);" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="btnTrainModel" class="primary" style="background:#ffb85c; color:#3e2700; border-color:#ffb85c;">Start Selected Model Training</button>
+        </div>
+        <div id="trainingStatusContainer" style="display:none; margin-top:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-size:0.8rem; font-weight:700; color:var(--primary-2);" id="trainingStateLabel">Status: Running</span>
+            <span class="pulseDot" id="trainingPulse" style="width:7px; height:7px;"></span>
+          </div>
+          <textarea id="trainingLogs" rows="6" readonly style="font-family:monospace; font-size:0.75rem; background:#080c0f; border-color:#202e35; color:#a4c0cb; width:100%;" placeholder="Training logs will scroll here..."></textarea>
+        </div>
+      </div>
     </section>
 
     <section class="panel">
-      <h2>Attack Panel (Adversarial Engine)</h2>
+      <h2>2) Threat Simulation Lab (Attacker)</h2>
+      <p class="sub">Configure and launch real-time simulated evasion attacks against the target defense node.</p>
+      
       <div class="actions">
+        <label>Attack Vector:
+          <select id="attackSelect" style="background:var(--bg-2); color:var(--text); border:1px solid var(--line); padding:6px; border-radius:4px;">
+            <option value="fgsm">fgsm (White-Box)</option>
+            <option value="bim">bim (White-Box)</option>
+            <option value="pgd">pgd (White-Box)</option>
+            <option value="uap">uap (White-Box)</option>
+            <option value="query">query (Black-Box)</option>
+            <option value="random">random (Noise)</option>
+          </select>
+        </label>
         <label>Epsilon <input id="epsilon" type="range" min="0.001" max="0.08" step="0.001" value="0.02" /></label>
-        <div id="epsVal">0.020</div>
+        <span id="epsVal" style="font-weight:700;">0.020</span>
       </div>
-      <div class="actions">
-        <button id="btnGenerate" class="danger">Generate Attack</button>
-        <button id="btnApply" class="primary">Apply Attack</button>
+
+      <div class="actions" style="margin-top:10px;">
+        <button id="btnStartSimulation" class="danger" style="background:#ff7f7f; color:#3e0000; border-color:#ff7f7f; font-weight:700;">Launch Attack Simulation</button>
+        <button id="btnSingleAttack" class="primary" style="background:#20343f; border-color:#324c5a; color:var(--primary-2); font-weight:700;">⚡ Fire 1 Attack</button>
+        <button id="btnStopSimulation" class="primary" style="background:#3a535f;" disabled>Stop Attack</button>
       </div>
-      <div id="attackCards" class="cards"></div>
+
+      <!-- Attack statistics cards -->
+      <div id="attackSimCards" class="cards" style="margin-top:12px;">
+        <div class="card"><div class="k">Status</div><div id="simCardStatus" class="v"><span class="statusBadge stopped">STOPPED</span></div></div>
+        <div class="card"><div class="k">Packets Sent</div><div id="simCardPackets" class="v">0</div></div>
+        <div class="card"><div class="k">Duration</div><div id="simCardDuration" class="v">0.0s</div></div>
+        <div class="card"><div class="k">Target Node</div><div id="simCardTarget" class="v" style="font-size:0.85rem; font-family:monospace;">127.0.0.1:9001/apply-attack</div></div>
+      </div>
+
+      <!-- Attack Simulation History & Activity Log -->
+      <div style="margin-top:18px; border-top:1px dashed var(--line); padding-top:14px;" id="attackHistorySection">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+          <h3 style="margin:0; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+            <span>📜 Attack Simulation History</span>
+            <span id="attackHistoryCount" class="statusChip" style="font-size:0.75rem; padding:2px 8px; font-weight:700; color:var(--primary-2);">0 Recorded</span>
+          </h3>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button id="btnExportAttackCsv" style="padding:4px 9px; font-size:0.75rem; background:#183227; border:1px solid var(--good); color:#8ee0bf; border-radius:6px; cursor:pointer; font-weight:700;" title="Export attack history as CSV spreadsheet">📊 CSV</button>
+            <button id="btnExportAttackJson" style="padding:4px 9px; font-size:0.75rem; background:#162c35; border:1px solid var(--primary); color:var(--primary-2); border-radius:6px; cursor:pointer; font-weight:700;" title="Export attack history as JSON">💾 JSON</button>
+            <button id="btnExportAttackTxt" style="padding:4px 9px; font-size:0.75rem; background:#2c2818; border:1px solid var(--warning); color:#ffd98b; border-radius:6px; cursor:pointer; font-weight:700;" title="Export attack history as TXT summary report">📝 TXT</button>
+            <button id="btnClearAttackHistory" style="padding:4px 9px; font-size:0.75rem; background:var(--bg-2); border:1px solid var(--line); color:var(--muted); border-radius:6px; cursor:pointer;" title="Clear attack history log">🗑️ Clear</button>
+          </div>
+        </div>
+        <p class="sub" style="margin-bottom:10px; font-size:0.78rem;">Live ledger of simulated adversarial vectors, perturbation limits (&epsilon;), target shifts, and IDS defense outcomes.</p>
+        
+        <!-- Summary metrics bar for attack history -->
+        <div id="attackHistorySummaryBar" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px; margin-bottom:10px;">
+          <div class="card" style="padding:6px 8px;"><div class="k" style="font-size:0.65rem;">Total Attempts</div><div id="histStatTotal" class="v" style="font-size:0.9rem; margin-top:2px;">0</div></div>
+          <div class="card bad" style="padding:6px 8px;"><div class="k" style="font-size:0.65rem;">Evasions (Bypass)</div><div id="histStatBypassed" class="v" style="font-size:0.9rem; margin-top:2px; color:var(--danger);">0</div></div>
+          <div class="card good" style="padding:6px 8px;"><div class="k" style="font-size:0.65rem;">Neutralized / Blocked</div><div id="histStatBlocked" class="v" style="font-size:0.9rem; margin-top:2px; color:var(--good);">0</div></div>
+          <div class="card warn" style="padding:6px 8px;"><div class="k" style="font-size:0.65rem;">Evasion Rate</div><div id="histStatRate" class="v" style="font-size:0.9rem; margin-top:2px; color:var(--warning);">0.0%</div></div>
+        </div>
+
+        <div class="tableWrap" style="max-height:220px; overflow-y:auto;">
+          <table style="width:100%; text-align:left; border-collapse:collapse;" id="attackHistoryTable">
+            <thead>
+              <tr style="border-bottom:1px solid var(--line); color:var(--muted); font-size:0.72rem; position:sticky; top:0; background:#1b2a31; z-index:2;">
+                <th style="padding:6px 6px;">#</th>
+                <th style="padding:6px 6px;">Time</th>
+                <th style="padding:6px 6px;">Vector</th>
+                <th style="padding:6px 6px;">&epsilon;</th>
+                <th style="padding:6px 6px;">Prediction Shift</th>
+                <th style="padding:6px 6px;">Defense Result</th>
+                <th style="padding:6px 6px;">Conf &Delta;</th>
+              </tr>
+            </thead>
+            <tbody id="attackHistoryBody">
+              <tr>
+                <td colspan="7" style="text-align:center; padding:18px 8px; color:var(--muted); font-style:italic; font-size:0.8rem;">
+                  No attack simulations recorded yet. Launch an attack simulation above to start recording history.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <section class="panel full">
-      <h2>Before vs After</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h2 style="margin: 0;">3) Before vs After Changes</h2>
+        <label class="checkwrap" style="font-size: 0.85rem; font-weight: 700; color: var(--primary-2); display: flex; align-items: center; gap: 4px; cursor: pointer;">
+          <input type="checkbox" id="chkOnlyPerturbed" checked> Show only perturbed features
+        </label>
+      </div>
+      <div id="visualStatusAlert" class="visualAlert normal">
+        <span>ℹ️ SYSTEM ACTIVE: Monitoring clean network traffic. No active perturbation.</span>
+      </div>
       <div class="tableWrap"><table id="changesTable"></table></div>
+
+      <!-- Explainable AI (XAI) Section -->
+      <div id="xaiSection" style="margin-top: 20px; border-top: 1px dashed var(--line); padding-top: 15px; display: none;">
+        <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: var(--warning); display: flex; align-items: center; gap: 6px;">
+          💡 Explainable AI (XAI): Evasion Vulnerability Mapping
+        </h3>
+        <p class="sub" style="margin-bottom: 12px;">Top features responsible for evading the IDS classifier (quantified by gradient-based sensitivity vectors).</p>
+        <div id="xaiAttributions" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
     </section>
 
     <section class="panel full">
-      <h2>System Metrics</h2>
-      <div id="metricCards" class="cards"></div>
-      <div class="charts">
-        <div id="accChart" class="chart"></div>
-        <div id="fnrChart" class="chart"></div>
-        <div id="foolChart" class="chart"></div>
+      <h2>4) Core Metrics</h2>
+      <p class="sub">Trade-offs are plotted against the adversarial scale (Epsilon) for stable security assessment.</p>
+      <div id="metricCards" class="cards" style="margin-bottom: 20px;"></div>
+      <div class="charts" style="grid-template-columns: 1fr; margin-bottom: 16px;">
+        <div id="combinedMetricsChart" class="chart" style="height: 440px; width: 100%;"></div>
       </div>
-      <div class="actions"><button id="btnRefreshMetrics">Refresh Metrics</button></div>
+      <div class="actions"><button id="btnRefreshMetrics">Refresh Metrics & Curves</button></div>
     </section>
+
+
+
+
   </main>
 
-  <script src="/assets/app.js"></script>
+  <div id="toastStack" class="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/assets/app.js?v=3.2"></script>
 </body>
 </html>

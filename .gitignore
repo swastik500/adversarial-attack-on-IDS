@@ -9,6 +9,11 @@ __pycache__/
 *.pt
 *.pth
 
+# Generated experiment outputs
+trained_models/forward_runs/
+adversarial_ml_ids/Results/
+*.eps
+
 # OS junk
 .DS_Store
 Thumbs.db

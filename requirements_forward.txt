@@ -8,3 +8,6 @@ stable-baselines3
 flask
 fastapi
 uvicorn
+pydantic
+streamlit
+plotly

@@ -75,3 +75,49 @@ class VAE(nn.Module):
         mu, logvar = self.encode(x.view(-1, 78))
         z = self.reparameterize(mu, logvar)
         return self.decode(z), mu, logvar
+
+class IDS_CNN(nn.Module):
+    def __init__(self):
+        super(IDS_CNN, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool1d(kernel_size=2)
+        
+        self.conv2 = nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.relu2 = nn.ReLU()
+        self.pool2 = nn.MaxPool1d(kernel_size=2)
+        
+        self.fc1 = nn.Linear(32 * 19, 64)
+        self.relu3 = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+        self.fc2 = nn.Linear(64, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        if x.dim() == 1:
+            x = x.unsqueeze(0)
+        x = x.unsqueeze(1)
+        x = self.pool1(self.relu1(self.conv1(x)))
+        x = self.pool2(self.relu2(self.conv2(x)))
+        x = x.view(x.size(0), -1)
+        x = self.dropout(self.relu3(self.fc1(x)))
+        x = self.sigmoid(self.fc2(x))
+        return x
+
+class IDS_RNN(nn.Module):
+    def __init__(self):
+        super(IDS_RNN, self).__init__()
+        self.lstm = nn.LSTM(input_size=1, hidden_size=32, num_layers=2, batch_first=True)
+        self.fc = nn.Linear(32, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        if x.dim() == 1:
+            x = x.unsqueeze(0)
+        x = x.unsqueeze(2)
+        h0 = torch.zeros(2, x.size(0), 32).to(x.device)
+        c0 = torch.zeros(2, x.size(0), 32).to(x.device)
+        out, _ = self.lstm(x, (h0, c0))
+        out = out[:, -1, :]
+        out = self.sigmoid(self.fc(out))
+        return out
